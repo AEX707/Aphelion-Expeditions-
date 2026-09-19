@@ -1,13 +1,12 @@
 // server.js
 // Backend for the Aphelion Expeditions website.
-// Receives data from the 3 forms on the site, sends an email notification,
+// Receives data from the 3 forms on the site, sends an email notification via Resend,
 // and saves a copy of every submission to a local file (submissions.log)
 // in case the email fails to send.
 
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
 
@@ -23,26 +22,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// ---------- Email setup ----------
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: Number(process.env.EMAIL_PORT) === 465, // true for port 465, false otherwise
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+// ---------- Email setup (Resend) ----------
+// Resend sends email over a normal HTTPS API call instead of SMTP, which avoids
+// the SMTP port blocking some hosts (including Render's free tier) apply.
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
-// Check the email connection when the server starts (not required, but useful for debugging)
-transporter.verify((error) => {
-  if (error) {
-    console.error("⚠️  Could not connect to the mail server:", error.message);
-    console.error("   Check your settings in the .env file");
-  } else {
-    console.log("✅ Mail server ready to send messages");
-  }
-});
+if (!RESEND_API_KEY) {
+  console.error("⚠️  RESEND_API_KEY is not set. Emails will not be sent.");
+  console.error("   Check your settings in the .env file (or Render Environment tab).");
+} else {
+  console.log("✅ Resend API key detected — ready to send messages");
+}
 
 // ---------- Save submissions to a local file (backup) ----------
 const LOG_FILE = path.join(__dirname, "submissions.log");
@@ -58,14 +48,31 @@ function saveSubmissionToFile(type, data) {
   });
 }
 
-// ---------- Helper function to send email ----------
+// ---------- Helper function to send email via Resend's API ----------
 async function sendNotificationEmail({ subject, html }) {
-  return transporter.sendMail({
-    from: `"Aphelion Expeditions Website" <${process.env.EMAIL_USER}>`,
-    to: process.env.EMAIL_TO,
-    subject,
-    html,
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      // "onboarding@resend.dev" is Resend's shared test sender — works immediately,
+      // no domain setup needed. Later you can verify your own domain in Resend
+      // and change this to something like "Aphelion Expeditions <notify@yourdomain.com>".
+      from: "Aphelion Expeditions <onboarding@resend.dev>",
+      to: process.env.EMAIL_TO,
+      subject,
+      html,
+    }),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Resend API error (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
 }
 
 // Simple required-fields check
