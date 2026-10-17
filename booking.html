@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request a Booking — Aphelion Expeditions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container topbar-content">
+    <span>For travel partners &amp; tour operators worldwide</span>
+    <span>partners@aphelionexpeditions.com</span>
+  </div>
+</div>
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="logo-full-img"></a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="tours.html">Tours</a>
+      <a href="index.html#benefits">Why Us</a>
+    </nav>
+    <div class="navbar-right">
+      <button class="menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-outline">Partner Login</a>
+      <a href="partner.html" class="btn btn-primary">Become a Partner</a>
+    </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="container">
+    <div class="eyebrow">Booking Request</div>
+    <h1 id="pageTitle">Request a Tour Booking</h1>
+    <p>Fill in the details below and our team will confirm availability within one business day.</p>
+  </div>
+</section>
+
+<section class="form-page-section">
+  <div class="container" style="max-width:640px;">
+    <div class="form-card">
+      <h3>Booking Details</h3>
+      <div class="success-message" id="successMessage">Thank you! Your booking request has been received. We'll be in touch shortly.</div>
+      <div class="error-message" id="errorMessage"></div>
+      <form id="bookingForm">
+        <div class="form-group">
+          <label for="tourName">Tour</label>
+          <input type="text" id="tourName" name="tourName" readonly>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="company">Company Name</label>
+            <input type="text" id="company" name="company" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="date">Preferred Date</label>
+            <input type="date" id="date" name="date" required>
+          </div>
+          <div class="form-group">
+            <label for="travelers">Number of Travelers</label>
+            <input type="number" id="travelers" name="travelers" min="1" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="details">Additional Details</label>
+          <textarea id="details" name="details" rows="4" placeholder="Any special requests or notes..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%;">Submit Booking Request</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="footer-logo-full-img"></div>
+        <p>Curated journeys for travel partners worldwide — beyond the horizon, beyond the ordinary.</p>
+      </div>
+      <div>
+        <h3>Explore</h3>
+        <a href="tours.html">All Tours</a>
+        <a href="index.html#benefits">Why Us</a>
+      </div>
+      <div>
+        <h3>Partners</h3>
+        <a href="partner.html">Become a Partner</a>
+        <a href="login.html">Partner Login</a>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <a href="mailto:partners@aphelionexpeditions.com">partners@aphelionexpeditions.com</a>
+        <a href="mailto:info@aphelionexpeditions.com">info@aphelionexpeditions.com</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="copyright">© 2026 Aphelion Expeditions. All rights reserved.</div>
+      <a href="admin.html" class="footer-admin-link" rel="nofollow">Admin</a>
+    </div>
+  </div>
+</footer>
+
+<script src="tours-data.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const id = parseInt(params.get('id'), 10);
+  let tour = null;
+
+  (async () => {
+    const tours = await getTours();
+    tour = tours.find(t => t.id === id);
+    if (tour) {
+      document.getElementById('tourName').value = tour.title;
+      document.getElementById('pageTitle').textContent = 'Request: ' + tour.title;
+    } else {
+      document.getElementById('tourName').value = 'General Inquiry';
+    }
+  })();
+
+  const form = document.getElementById('bookingForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const successMessage = document.getElementById('successMessage');
+  const errorMessage = document.getElementById('errorMessage');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMessage.style.display = 'none';
+    successMessage.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    const payload = {
+      tour_id: tour ? tour.id : null,
+      tour_name: document.getElementById('tourName').value,
+      company: document.getElementById('company').value,
+      email: document.getElementById('email').value,
+      requested_date: document.getElementById('date').value,
+      travelers: document.getElementById('travelers').value,
+      details: document.getElementById('details').value,
+      status: 'pending'
+    };
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/bookings`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      successMessage.style.display = 'block';
+      form.reset();
+      document.getElementById('tourName').value = tour ? tour.title : 'General Inquiry';
+    } catch (err) {
+      errorMessage.textContent = 'Could not submit your request. Please try again or email us directly. (' + err.message + ')';
+      errorMessage.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Booking Request';
+    }
+  });
+</script>
+<script src="mobile-nav.js"></script>
+<script src="i18n.js"></script>
+</body>
+</html>

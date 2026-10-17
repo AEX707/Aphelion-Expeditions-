@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tour Details — Aphelion Expeditions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container topbar-content">
+    <span>For travel partners &amp; tour operators worldwide</span>
+    <span>partners@aphelionexpeditions.com</span>
+  </div>
+</div>
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="logo-full-img"></a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="tours.html" class="active">Tours</a>
+      <a href="index.html#benefits">Why Us</a>
+    </nav>
+    <div class="navbar-right">
+      <button class="menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-outline">Partner Login</a>
+      <a href="partner.html" class="btn btn-primary">Become a Partner</a>
+    </div>
+    </div>
+  </div>
+</header>
+
+<div id="tourContent"></div>
+
+<div id="notFound" class="container" style="display:none; padding:100px 0; text-align:center;">
+  <h1>Tour not found</h1>
+  <p style="color:var(--muted); margin:20px 0;">We couldn't find the tour you're looking for.</p>
+  <a href="tours.html" class="btn btn-primary">← Back to Catalogue</a>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="footer-logo-full-img"></div>
+        <p>Curated journeys for travel partners worldwide — beyond the horizon, beyond the ordinary.</p>
+      </div>
+      <div>
+        <h3>Explore</h3>
+        <a href="tours.html">All Tours</a>
+        <a href="index.html#benefits">Why Us</a>
+      </div>
+      <div>
+        <h3>Partners</h3>
+        <a href="partner.html">Become a Partner</a>
+        <a href="login.html">Partner Login</a>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <a href="mailto:partners@aphelionexpeditions.com">partners@aphelionexpeditions.com</a>
+        <a href="mailto:info@aphelionexpeditions.com">info@aphelionexpeditions.com</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="copyright">© 2026 Aphelion Expeditions. All rights reserved.</div>
+      <a href="admin.html" class="footer-admin-link" rel="nofollow">Admin</a>
+    </div>
+  </div>
+</footer>
+
+<script src="tours-data.js"></script>
+<script>
+  (async () => {
+    const params = new URLSearchParams(window.location.search);
+    const id = parseInt(params.get('id'), 10);
+    const tours = await getTours();
+    const tour = tours.find(t => t.id === id);
+
+    if (!tour) {
+      document.getElementById('notFound').style.display = 'block';
+    } else {
+      document.title = tour.title + ' — Aphelion Expeditions';
+      document.getElementById('tourContent').innerHTML = `
+        <section class="page-hero">
+          <div class="container">
+            <span class="tour-tag" style="position:static; display:inline-block; margin-bottom:16px;">${tour.tag}</span>
+            <div class="tour-location">${tour.location}</div>
+            <h1>${tour.title}</h1>
+          </div>
+        </section>
+        <section>
+          <div class="container">
+            <div class="detail-frame">
+              <img id="detailHero" src="${tour.image}" alt="${tour.title}">
+            </div>
+            ${Array.isArray(tour.images) && tour.images.length > 1 ? `
+              <div class="tour-gallery">
+                ${tour.images.map((img, i) => `<img src="${img}" alt="${tour.title}" class="tour-gallery-thumb${img === tour.image ? ' active' : ''}" onclick="setHeroPhoto('${img.replace(/'/g, "\\'")}', this)">`).join('')}
+              </div>
+            ` : ''}
+            <div class="detail-meta">
+              <span>⏱ ${tour.duration}</span>
+              <span>👥 ${tour.group}</span>
+              <span>📍 ${tour.location}</span>
+            </div>
+            <p class="detail-body">${tour.description}</p>
+            <p class="mt-note" id="mtNote" style="display:none; font-size:12px; color:var(--muted); margin:-6px 0 22px;"><span>Translated automatically</span> · <a href="#" id="mtToggle" style="color:var(--gold-soft);">Show original</a></p>
+            <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+              <div class="price"><small>From</small><strong style="font-size:32px;">¥${Number(tour.price).toLocaleString('ja-JP')}</strong><span class="price-approx" data-jpy="${tour.price}"></span></div>
+              <a href="booking.html?id=${tour.id}" class="btn btn-primary">Request This Tour</a>
+              <a href="tours.html" class="btn btn-outline">← Back to Catalogue</a>
+            </div>
+          </div>
+        </section>
+      `;
+
+      // "Translated automatically · Show original" under the description,
+      // shown only when this tour has a machine translation for the chosen language.
+      const updateTranslationNote = () => {
+        const note = document.getElementById('mtNote');
+        const toggle = document.getElementById('mtToggle');
+        if (!note || !window.AEX_getLanguage) return;
+        const ids = (window.AEX_TOUR_TRANSLATED_IDS || {})[window.AEX_getLanguage()] || {};
+        note.style.display = ids[tour.id] ? 'block' : 'none';
+        document.title = (window.AEX_t ? window.AEX_t(tour.title) : tour.title) + ' — Aphelion Expeditions';
+        toggle.textContent = window.AEX_isShowingOriginal() ? 'Show translation' : 'Show original';
+      };
+      document.getElementById('mtToggle').addEventListener('click', e => {
+        e.preventDefault();
+        window.AEX_setShowOriginal(!window.AEX_isShowingOriginal());
+      });
+      window.addEventListener('aex:languagechange', updateTranslationNote);
+      window.addEventListener('aex:originaltoggle', updateTranslationNote);
+      updateTranslationNote();
+    }
+  })();
+
+  function setHeroPhoto(url, thumbEl) {
+    document.getElementById('detailHero').src = url;
+    document.querySelectorAll('.tour-gallery-thumb').forEach(el => el.classList.remove('active'));
+    thumbEl.classList.add('active');
+  }
+</script>
+<script src="mobile-nav.js"></script>
+<script src="currency.js"></script>
+<script src="i18n.js"></script>
+</body>
+</html>

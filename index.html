@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aphelion Expeditions — Beyond the Horizon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container topbar-content">
+    <span>For travel partners &amp; tour operators worldwide</span>
+    <span>partners@aphelionexpeditions.com</span>
+  </div>
+</div>
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="logo-full-img"></a>
+    <nav>
+      <a href="index.html" class="active">Home</a>
+      <a href="tours.html">Tours</a>
+      <a href="index.html#benefits">Why Us</a>
+    </nav>
+    <div class="navbar-right">
+      <button class="menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-outline">Partner Login</a>
+      <a href="partner.html" class="btn btn-primary">Become a Partner</a>
+    </div>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-content">
+    <div class="eyebrow">The farthest point, the finest view</div>
+    <h1 class="hero-title">Beyond <em>The Horizon</em></h1>
+    <p>Aphelion Expeditions curates extraordinary journeys — from ocean sunsets to mountain terraces to the pulse of the world's great cities — for travel partners who demand something rarer than the ordinary.</p>
+    <div class="hero-buttons">
+      <a href="tours.html" class="btn btn-primary">Explore Tours</a>
+      <a href="partner.html" class="btn btn-light">Become a Partner</a>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+  <form class="search-panel" action="tours.html" method="get">
+    <div class="search-grid">
+      <div>
+        <label for="q">Search</label>
+        <input type="text" id="q" name="q" placeholder="Search tours, cities, experiences...">
+      </div>
+      <div>
+        <label for="destination">Destination</label>
+        <select id="destination" name="destination">
+          <option value="">All destinations</option>
+          <option value="lisbon">Lisbon</option>
+          <option value="barcelona">Barcelona</option>
+          <option value="istanbul">Istanbul</option>
+          <option value="bali">Bali</option>
+          <option value="japan">Japan</option>
+        </select>
+      </div>
+      <div>
+        <label for="type">Experience</label>
+        <select id="type" name="type">
+          <option value="">All types</option>
+          <option value="food">Food &amp; Drink</option>
+          <option value="culture">Culture</option>
+          <option value="cruise">Cruise</option>
+          <option value="nature">Nature</option>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary" style="width:100%;">Search</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<section class="tours-section">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Featured Journeys</div>
+        <h2>Handpicked expeditions</h2>
+      </div>
+      <p>A small selection of our most requested experiences — see the full catalogue for all destinations and categories.</p>
+    </div>
+    <div class="tour-grid" id="featuredGrid"></div>
+    <div style="text-align:center; margin-top:44px;">
+      <a href="tours.html" class="btn btn-outline">View Full Catalogue</a>
+    </div>
+  </div>
+</section>
+
+<section class="benefits" id="benefits">
+  <div class="container">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Why Aphelion</div>
+        <h2>Built for travel partners</h2>
+      </div>
+      <p>Everything you need to offer world-class experiences under your own brand.</p>
+    </div>
+    <div class="benefit-grid">
+      <div class="benefit">
+        <div class="benefit-icon">✦</div>
+        <h3>Curated Network</h3>
+        <p>Vetted local operators across ocean, city and nature destinations worldwide.</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">✦</div>
+        <h3>Partner Dashboard</h3>
+        <p>List and manage your own tours, photos and prices — every listing is reviewed before it goes live.</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">✦</div>
+        <h3>Fast Response</h3>
+        <p>Booking and partnership requests reviewed within one business day.</p>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">✦</div>
+        <h3>Transparent Pricing</h3>
+        <p>Clear, partner-friendly rates with no hidden commission surprises.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="form-page-section" id="contact">
+  <div class="container form-layout">
+    <div>
+      <div class="eyebrow">Get in touch</div>
+      <h2>Ready to expand your catalogue?</h2>
+      <p>Join our network of travel partners and offer your customers journeys beyond the ordinary.</p>
+      <ul class="check-list">
+        <li>Access to our full tour catalogue</li>
+        <li>Dedicated partner support</li>
+        <li>Your own dashboard to list and manage tours</li>
+      </ul>
+      <a href="partner.html" class="btn btn-primary">Apply to Partner</a>
+    </div>
+    <div class="form-card">
+      <h3>Explore the catalogue</h3>
+      <p style="color:var(--muted); margin-bottom:22px;">Browse every tour and experience currently available to partners.</p>
+      <a href="tours.html" class="btn btn-outline" style="width:100%; text-align:center;">View All Tours</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="footer-logo-full-img"></div>
+        <p>Curated journeys for travel partners worldwide — beyond the horizon, beyond the ordinary.</p>
+      </div>
+      <div>
+        <h3>Explore</h3>
+        <a href="tours.html">All Tours</a>
+        <a href="index.html#benefits">Why Us</a>
+      </div>
+      <div>
+        <h3>Partners</h3>
+        <a href="partner.html">Become a Partner</a>
+        <a href="login.html">Partner Login</a>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <a href="mailto:partners@aphelionexpeditions.com">partners@aphelionexpeditions.com</a>
+        <a href="mailto:info@aphelionexpeditions.com">info@aphelionexpeditions.com</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="copyright">© 2026 Aphelion Expeditions. All rights reserved.</div>
+      <a href="admin.html" class="footer-admin-link" rel="nofollow">Admin</a>
+    </div>
+  </div>
+</footer>
+
+<script src="tours-data.js"></script>
+<script>
+  function renderFeatured(tours) {
+    const grid = document.getElementById('featuredGrid');
+    grid.innerHTML = tours.slice(0, 3).map(t => `
+      <div class="tour-card">
+        <div class="tour-image" style="background-image:url('${t.image}')">
+          <span class="tour-tag">${t.tag}</span>
+        </div>
+        <div class="tour-body">
+          <div class="tour-location">${t.location}</div>
+          <h3>${t.title}</h3>
+          <div class="tour-meta"><span>⏱ ${t.duration}</span><span>👥 ${t.group}</span></div>
+          <div class="tour-footer">
+            <div class="price"><small>From</small><strong>¥${Number(t.price).toLocaleString('ja-JP')}</strong><span class="price-approx" data-jpy="${t.price}"></span></div>
+            <a href="tour.html?id=${t.id}" class="btn btn-outline">View Details</a>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  (async () => {
+    const tours = await getTours();
+    renderFeatured(tours);
+  })();
+</script>
+<script src="mobile-nav.js"></script>
+<script src="currency.js"></script>
+<script src="i18n.js"></script>
+</body>
+</html>

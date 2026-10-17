@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tour Admin — Aphelion Expeditions</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .admin-wrap { max-width: 1000px; margin: 0 auto; padding: 60px 20px 100px; }
+  .admin-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:12px; }
+  .admin-list { display:flex; flex-direction:column; gap:14px; margin-bottom:50px; }
+  .admin-row { background: var(--panel); border:1px solid var(--border); border-radius: var(--radius); padding:16px 20px; display:flex; align-items:center; gap:16px; }
+  .admin-row img { width:70px; height:50px; object-fit:cover; border-radius:6px; flex-shrink:0; background:#111; }
+  .admin-row .info { flex:1; min-width:0; }
+  .admin-row .info h4 { font-size:16px; margin:0 0 4px; color:var(--white); }
+  .admin-row .info span { font-size:12px; color:var(--muted); }
+  .admin-row .actions { display:flex; gap:8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end; }
+  /* Action buttons: solid, color-coded so the meaning is clear at a glance */
+  .admin-row .actions button { border:1px solid transparent; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; text-transform:uppercase; letter-spacing:.4px; transition:filter .15s, transform .05s; }
+  .admin-row .actions button:hover { filter:brightness(1.15); }
+  .admin-row .actions button:active { transform:translateY(1px); }
+  .admin-row .actions button.btn-go     { background:#22c55e; color:#06240f; }  /* Approve / Confirm — green */
+  .admin-row .actions button.btn-wait   { background:#facc15; color:#2b2200; }  /* Pending — yellow */
+  .admin-row .actions button.btn-stop   { background:#ef4444; color:#fff; }     /* Reject / Decline — red */
+  .admin-row .actions button.btn-paid   { background:#3b82f6; color:#fff; }     /* Mark Paid — blue */
+  .admin-row .actions button.btn-edit   { background:transparent; color:var(--white); border-color:var(--border); }
+  .admin-row .actions button.btn-delete { background:transparent; color:#ff6b6b; border-color:#ff6b6b; }
+  .admin-row .actions button.btn-delete:hover { background:#ff6b6b; color:#fff; filter:none; }
+  .admin-row .actions button.btn-translate { background:transparent; color:var(--gold-soft); border-color:rgba(212,175,55,.5); }
+  .admin-row .tr-state { font-size:11px; color:var(--muted); margin-left:6px; }
+  /* The button matching the current status is shown faded with a ✓, so you can see the state */
+  .admin-row .actions button.is-current { opacity:.35; cursor:default; }
+  .admin-row .actions button.is-current::before { content:'✓ '; }
+  #gate { position:fixed; inset:0; background:var(--void); display:flex; align-items:center; justify-content:center; z-index:100; }
+  #adminContent { display:none; }
+  .status-msg { padding:12px 16px; border-radius:8px; font-size:13px; margin-bottom:20px; display:none; }
+  .status-msg.ok { background:rgba(64,180,120,.12); border:1px solid rgba(64,180,120,.4); color:#7ee0a8; display:block; }
+  .status-msg.err { background:rgba(224,86,86,.12); border:1px solid rgba(224,86,86,.4); color:#f19a9a; display:block; }
+  .section-divider { border:none; border-top:1px solid var(--border); margin:60px 0 40px; }
+  /* Status labels: solid bright colors matching the buttons */
+  .status-pill { display:inline-block; padding:4px 12px; border-radius:20px; font-size:11px; text-transform:uppercase; letter-spacing:.5px; font-weight:800; vertical-align:middle; }
+  .status-pill.pending, .admin-row .info .status-pill.pending { background:#facc15; color:#2b2200; }
+  .status-pill.approved, .status-pill.confirmed, .admin-row .info .status-pill.approved, .admin-row .info .status-pill.confirmed { background:#22c55e; color:#06240f; }
+  .status-pill.rejected, .status-pill.declined, .admin-row .info .status-pill.rejected, .admin-row .info .status-pill.declined { background:#ef4444; color:#fff; }
+  .status-pill.paid, .admin-row .info .status-pill.paid { background:#3b82f6; color:#fff; }
+  .status-pill.awaiting, .admin-row .info .status-pill.awaiting { background:#f97316; color:#fff; }
+
+  .photo-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .photo-thumb { position: relative; width: 80px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb button { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,.75); color: #fff; font-size: 14px; line-height: 1; border: none; cursor: pointer; }
+
+  @media (max-width: 640px) {
+    .admin-row { flex-wrap: wrap; }
+    .admin-row .actions { width: 100%; flex-wrap: wrap; }
+    .admin-row .actions button { flex: 1 1 auto; }
+    .admin-header { align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="form-card" style="max-width:360px; width:90%;">
+    <h3>Admin Sign In</h3>
+    <div class="form-group">
+      <label for="adminEmail">Email</label>
+      <input type="email" id="adminEmail" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label for="pw">Password</label>
+      <input type="password" id="pw" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%;" onclick="adminLogin()">Sign In</button>
+    <p id="pwError" style="color:#f19a9a; font-size:13px; margin-top:12px; display:none;"></p>
+  </div>
+</div>
+
+<div id="adminContent">
+<div class="topbar">
+  <div class="container topbar-content">
+    <span>For travel partners &amp; tour operators worldwide</span>
+    <span>partners@aphelionexpeditions.com</span>
+  </div>
+</div>
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="logo-full-img"></a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="tours.html">Tours</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="btn btn-outline" onclick="adminSignOut()">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<div class="admin-wrap">
+  <div class="admin-header">
+    <h1 style="font-size:32px;">Manage Tours</h1>
+    <button class="btn btn-primary" onclick="openForm()">+ Add New Tour</button>
+  </div>
+
+  <div id="statusMsg" class="status-msg"></div>
+
+  <div id="adminList" class="admin-list">
+    <p style="color:var(--muted);">Loading tours…</p>
+  </div>
+
+  <div class="form-card" id="formCard" style="display:none;">
+    <h3 id="formTitle">Add Tour</h3>
+    <form id="tourForm">
+      <input type="hidden" id="f_id">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="f_title" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" id="f_location" required>
+        </div>
+        <div class="form-group">
+          <label>Destination key (e.g. lisbon, japan)</label>
+          <input type="text" id="f_destination" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category (food / culture / cruise / nature)</label>
+          <input type="text" id="f_category" required>
+        </div>
+        <div class="form-group">
+          <label>Tag (e.g. Popular, Best Seller)</label>
+          <input type="text" id="f_tag">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Duration (e.g. 3 hours)</label>
+          <input type="text" id="f_duration">
+        </div>
+        <div class="form-group">
+          <label>Group size (e.g. Up to 10 travelers)</label>
+          <input type="text" id="f_group">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Price per person (JPY ¥, number only)</label>
+        <input type="number" step="1" min="0" id="f_price" required>
+      </div>
+      <div class="form-group">
+        <label>Photos (select one or more — first one becomes the cover photo)</label>
+        <input type="file" id="f_photos" accept="image/*" multiple>
+        <div id="f_photos_preview" class="photo-preview-grid"></div>
+      </div>
+      <div class="form-group">
+        <label>Or paste an Image URL instead (optional, used only if no photos uploaded above)</label>
+        <input type="text" id="f_image">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="f_description" rows="5"></textarea>
+      </div>
+      <div style="display:flex; gap:12px;">
+        <button type="submit" class="btn btn-primary">Save Tour</button>
+        <button type="button" class="btn btn-outline" onclick="closeForm()">Cancel</button>
+      </div>
+    </form>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="admin-header">
+    <h1 style="font-size:32px;">Manage Partners</h1>
+  </div>
+
+  <div id="partnerStatusMsg" class="status-msg"></div>
+
+  <div id="partnerList" class="admin-list">
+    <p style="color:var(--muted);">Loading partners…</p>
+  </div>
+
+  <hr class="section-divider">
+
+  <div class="admin-header">
+    <h1 style="font-size:32px;">Booking Requests</h1>
+  </div>
+
+  <div id="bookingStatusMsg" class="status-msg"></div>
+
+  <div id="bookingList" class="admin-list">
+    <p style="color:var(--muted);">Loading booking requests…</p>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <div class="copyright">© 2026 Aphelion Expeditions. Admin panel — not indexed, do not share this link.</div>
+  </div>
+</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="tours-data.js"></script>
+<script>
+  // --- Real admin sign-in (Supabase Auth) ---
+  // The admin signs in with email + password. The database itself checks that
+  // this account is listed in the "admins" table (is_admin()), so the data is
+  // protected even if someone reads this page's code.
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Online payment links stay off until the Japanese Square account (ZEN Co.)
+  // is connected. While off, "Confirm" sends the confirmation email without a link.
+  const PAYMENTS_ENABLED = false;
+
+  let adminUnlocked = false;
+
+  function showGateError(msg) {
+    const el = document.getElementById('pwError');
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+  }
+
+  function unlockAdmin() {
+    adminUnlocked = true;
+    showGateError('');
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('adminContent').style.display = 'block';
+    markAdminActivity();
+    loadList();
+    loadPartners();
+    loadBookings();
+  }
+
+  function lockAdmin(msg) {
+    adminUnlocked = false;
+    document.getElementById('gate').style.display = 'flex';
+    document.getElementById('adminContent').style.display = 'none';
+    document.getElementById('pw').value = '';
+    showGateError(msg || '');
+  }
+
+  // Token of the signed-in admin, sent with every request so the database
+  // knows who is asking.
+  async function getAccessToken() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+      lockAdmin('Your session has ended. Please sign in again.');
+      throw new Error('Not signed in');
+    }
+    return session.access_token;
+  }
+
+  // Signed in, but is this account actually an admin?
+  async function verifyAdminAndUnlock() {
+    const { data, error } = await supabaseClient.rpc('is_admin');
+    if (error || data !== true) {
+      await supabaseClient.auth.signOut();
+      lockAdmin('This account does not have admin access.');
+      return;
+    }
+    unlockAdmin();
+  }
+
+  async function adminLogin() {
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('pw').value;
+    if (!email || !password) { showGateError('Enter your email and password.'); return; }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    btn.disabled = false; btn.textContent = 'Sign In';
+    if (error) {
+      const m = (error.message || '').toLowerCase();
+      if (m.includes('not confirmed')) {
+        showGateError('This account is not confirmed yet. In Supabase → Authentication → Users, confirm the user (or recreate it with "Auto Confirm User" ticked).');
+      } else if (m.includes('invalid login credentials')) {
+        showGateError('Wrong email or password.');
+      } else {
+        showGateError('Sign-in failed: ' + error.message);
+      }
+      return;
+    }
+    await verifyAdminAndUnlock();
+  }
+  document.getElementById('pw').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') adminLogin();
+  });
+
+  // Manual "Sign out" → back to the public home page.
+  // Automatic sign-out after inactivity → stay here and explain why.
+  async function adminSignOut(msg) {
+    await supabaseClient.auth.signOut();
+    localStorage.removeItem(ADMIN_LAST_ACTIVITY_KEY);
+    if (!msg) { window.location.href = 'index.html'; return; }
+    lockAdmin(msg);
+  }
+
+  // --- Auto sign-out after 5 minutes of inactivity ---
+  const ADMIN_IDLE_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
+  const ADMIN_LAST_ACTIVITY_KEY = 'aex_admin_last_activity';
+
+  function markAdminActivity() {
+    if (adminUnlocked) localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, Date.now().toString());
+  }
+
+  function idleTooLong() {
+    const last = parseInt(localStorage.getItem(ADMIN_LAST_ACTIVITY_KEY) || '0', 10);
+    return last > 0 && Date.now() - last > ADMIN_IDLE_LIMIT_MS;
+  }
+
+  function checkAdminIdle() {
+    if (adminUnlocked && idleTooLong()) {
+      adminSignOut('Signed out after 5 minutes of inactivity.');
+    }
+  }
+
+  ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'].forEach(evt => {
+    document.addEventListener(evt, markAdminActivity, { passive: true });
+  });
+  setInterval(checkAdminIdle, 15000); // check every 15s
+
+  // On page load: if the last session went idle, sign out; otherwise reuse it.
+  (async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+    if (idleTooLong()) { await adminSignOut('Signed out after 5 minutes of inactivity.'); return; }
+    await verifyAdminAndUnlock();
+  })();
+
+  function showStatus(msg, ok) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className = 'status-msg ' + (ok ? 'ok' : 'err');
+    setTimeout(() => { el.className = 'status-msg'; }, 4000);
+  }
+
+  // Sends an email through the send-email Edge Function (Resend behind it).
+  // Never blocks the admin action if the email fails to send.
+  async function sendNotificationEmail(to, subject, html) {
+    if (!to) return;
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ to, subject, html })
+      });
+    } catch (err) {
+      console.error('Email notification failed:', err);
+    }
+  }
+
+  // --- Automatic translation of tours (Google, via the translate-tour function) ---
+  function translationState(t) {
+    const tr = t.translations;
+    if (!tr || typeof tr !== 'object') return ' · not translated';
+    const n = Object.keys(tr).filter(k => !k.startsWith('_')).length;
+    return n ? ` · 🌐 translated (${n} languages)` : ' · not translated';
+  }
+
+  // force = translate again even if the text hasn't changed since last time.
+  async function translateTour(id, force) {
+    showStatus('Translating tour into all languages…', true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/translate-tour`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tourId: id, force: !!force })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || ('Status ' + res.status));
+      showStatus(data.skipped ? 'Translation is already up to date.' : 'Tour translated into ' + (data.languages || []).length + ' languages.', true);
+      loadList();
+    } catch (err) {
+      showStatus('Saved, but translation failed: ' + err.message, false);
+    }
+  }
+
+  async function loadList() {
+    const tours = await getAllToursAdmin(await getAccessToken());
+    const list = document.getElementById('adminList');
+    if (!tours.length) {
+      list.innerHTML = '<p style="color:var(--muted);">No tours yet. Add your first one above.</p>';
+      return;
+    }
+    list.innerHTML = tours.map(t => `
+      <div class="admin-row">
+        <img src="${t.image || ''}" onerror="this.style.opacity=0.2">
+        <div class="info">
+          <h4>${t.title} <span class="status-pill ${t.status || 'approved'}">${t.status || 'approved'}</span></h4>
+          <span>${t.location} · ¥${Number(t.price).toLocaleString('ja-JP')} · ${t.category}${t.partner_id ? ' · submitted by partner' : ''}<span class="tr-state">${translationState(t)}</span></span>
+        </div>
+        <div class="actions">
+          <button class="btn-go${(t.status || 'approved') === 'approved' ? ' is-current' : ''}" onclick="setTourStatus(${t.id}, 'approved', ${t.partner_id ? `'${t.partner_id}'` : 'null'}, '${(t.title || '').replace(/'/g, "\\'")}')">Approve</button>
+          <button class="btn-wait${t.status === 'pending' ? ' is-current' : ''}" onclick="setTourStatus(${t.id}, 'pending', ${t.partner_id ? `'${t.partner_id}'` : 'null'}, '${(t.title || '').replace(/'/g, "\\'")}')">Pending</button>
+          <button class="btn-stop${t.status === 'rejected' ? ' is-current' : ''}" onclick="setTourStatus(${t.id}, 'rejected', ${t.partner_id ? `'${t.partner_id}'` : 'null'}, '${(t.title || '').replace(/'/g, "\\'")}')">Reject</button>
+          <button class="btn-edit" onclick='editTour(${JSON.stringify(t).replace(/'/g, "&apos;")})'>Edit</button>
+          <button class="btn-translate" title="Translate this tour into all site languages" onclick="translateTour(${t.id}, true)">🌐 Translate</button>
+          <button class="btn-delete" onclick="deleteTour(${t.id}, '${(t.title || '').replace(/'/g, "\\'")}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function setTourStatus(id, status, partnerId, tourTitle) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/tours?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      _toursCache = null; // clear public cache so approved changes show up immediately
+      showStatus('Tour status updated to "' + status + '".', true);
+      if (status === 'approved') translateTour(id, false); // translate for visitors in other languages
+
+      if (partnerId && (status === 'approved' || status === 'rejected')) {
+        try {
+          const pRes = await fetch(`${SUPABASE_URL}/rest/v1/partners?select=email&id=eq.${partnerId}`, {
+            headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${await getAccessToken()}` }
+          });
+          const pData = await pRes.json();
+          const partnerEmail = pData[0] && pData[0].email;
+          if (partnerEmail) {
+            const subject = status === 'approved'
+              ? `Your tour "${tourTitle}" is now live`
+              : `Update on your tour "${tourTitle}"`;
+            const html = status === 'approved'
+              ? `<p>Good news — your tour <strong>${tourTitle}</strong> has been approved and is now visible to customers on Aphelion Expeditions.</p>`
+              : `<p>Your tour <strong>${tourTitle}</strong> was not approved at this time. Please review the details in your dashboard, or contact us for feedback.</p>`;
+            sendNotificationEmail(partnerEmail, subject, html);
+          }
+        } catch (e) { /* don't block the main action on a lookup failure */ }
+      }
+
+      loadList();
+    } catch (err) {
+      showStatus('Could not update: ' + err.message, false);
+    }
+  }
+
+  let editingImages = [];
+
+  function renderPhotoPreview() {
+    const el = document.getElementById('f_photos_preview');
+    el.innerHTML = editingImages.map((url, i) => `
+      <div class="photo-thumb">
+        <img src="${url}" onerror="this.style.opacity=0.2">
+        <button type="button" onclick="removeEditingImage(${i})">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  function removeEditingImage(i) {
+    editingImages.splice(i, 1);
+    renderPhotoPreview();
+  }
+
+  // Shrinks/compresses a photo before upload so a 8MB phone photo doesn't
+  // eat the free storage quota or slow the site down. Every photo ends up
+  // at most 1600px wide, saved as a JPEG — this also makes gallery photos
+  // a consistent size regardless of what device they were taken on.
+  function resizeImage(file, maxWidth = 1600, quality = 0.82) {
+    return new Promise((resolve) => {
+      if (!file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
+        resolve(file); // leave GIFs and non-images untouched
+        return;
+      }
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = Math.round(height * (maxWidth / width));
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => resolve(blob || file), 'image/jpeg', quality);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+
+  async function uploadTourImage(file) {
+    const resized = await resizeImage(file);
+    const ext = resized.type === 'image/jpeg' ? 'jpg' : (file.name.split('.').pop() || 'jpg');
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/tour-images/${path}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${await getAccessToken()}`,
+        'Content-Type': resized.type || 'application/octet-stream'
+      },
+      body: resized
+    });
+    if (!res.ok) throw new Error('Upload failed (' + res.status + ')');
+    return `${SUPABASE_URL}/storage/v1/object/public/tour-images/${path}`;
+  }
+
+  document.getElementById('f_photos').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    showStatus('Uploading photo(s)…', true);
+    try {
+      for (const file of files) {
+        const url = await uploadTourImage(file);
+        editingImages.push(url);
+      }
+      renderPhotoPreview();
+      showStatus('Photo(s) uploaded.', true);
+    } catch (err) {
+      showStatus('Could not upload: ' + err.message, false);
+    }
+    e.target.value = '';
+  });
+
+  function openForm() {
+    document.getElementById('formTitle').textContent = 'Add Tour';
+    document.getElementById('tourForm').reset();
+    document.getElementById('f_id').value = '';
+    editingImages = [];
+    renderPhotoPreview();
+    document.getElementById('formCard').style.display = 'block';
+    document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function closeForm() {
+    document.getElementById('formCard').style.display = 'none';
+  }
+
+  function editTour(t) {
+    document.getElementById('formTitle').textContent = 'Edit Tour';
+    document.getElementById('f_id').value = t.id;
+    document.getElementById('f_title').value = t.title || '';
+    document.getElementById('f_location').value = t.location || '';
+    document.getElementById('f_destination').value = t.destination || '';
+    document.getElementById('f_category').value = t.category || '';
+    document.getElementById('f_tag').value = t.tag || '';
+    document.getElementById('f_duration').value = t.duration || '';
+    document.getElementById('f_group').value = t.group || '';
+    document.getElementById('f_price').value = t.price || '';
+    document.getElementById('f_image').value = t.image || '';
+    document.getElementById('f_description').value = t.description || '';
+    editingImages = Array.isArray(t.images) && t.images.length ? [...t.images] : (t.image ? [t.image] : []);
+    renderPhotoPreview();
+    document.getElementById('formCard').style.display = 'block';
+    document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function deleteTour(id, title) {
+    if (!confirm('Delete "' + title + '"? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/tours?id=eq.${id}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`
+        }
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      _toursCache = null;
+      showStatus('Tour deleted.', true);
+      loadList();
+    } catch (err) {
+      showStatus('Could not delete: ' + err.message, false);
+    }
+  }
+
+  document.getElementById('tourForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('f_id').value;
+    const payload = {
+      title: document.getElementById('f_title').value,
+      location: document.getElementById('f_location').value,
+      destination: document.getElementById('f_destination').value,
+      category: document.getElementById('f_category').value,
+      tag: document.getElementById('f_tag').value,
+      duration: document.getElementById('f_duration').value,
+      group_size: document.getElementById('f_group').value,
+      price: parseFloat(document.getElementById('f_price').value),
+      image: editingImages[0] || document.getElementById('f_image').value || '',
+      images: editingImages.length ? editingImages : (document.getElementById('f_image').value ? [document.getElementById('f_image').value] : []),
+      description: document.getElementById('f_description').value
+    };
+    if (!id) payload.status = 'approved'; // tours added directly by admin go live right away
+
+    try {
+      let res;
+      if (id) {
+        res = await fetch(`${SUPABASE_URL}/rest/v1/tours?id=eq.${id}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${await getAccessToken()}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch(`${SUPABASE_URL}/rest/v1/tours`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${await getAccessToken()}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+      if (!res.ok) throw new Error('Status ' + res.status);
+      _toursCache = null; // clear public cache so the change shows up immediately
+      showStatus(id ? 'Tour updated.' : 'Tour added.', true);
+      closeForm();
+      loadList();
+      // Translate the saved tour (only does work if its text changed).
+      let savedId = id ? Number(id) : null;
+      if (!savedId) { const rows = await res.json().catch(() => []); savedId = rows[0] && rows[0].id; }
+      if (savedId) translateTour(savedId, false);
+    } catch (err) {
+      showStatus('Could not save: ' + err.message, false);
+    }
+  });
+
+  function showPartnerStatus(msg, ok) {
+    const el = document.getElementById('partnerStatusMsg');
+    el.textContent = msg;
+    el.className = 'status-msg ' + (ok ? 'ok' : 'err');
+    setTimeout(() => { el.className = 'status-msg'; }, 4000);
+  }
+
+  async function loadPartners() {
+    const list = document.getElementById('partnerList');
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/partners?select=*&order=created_at.desc`, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`
+        }
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      const partners = await res.json();
+      if (!partners.length) {
+        list.innerHTML = '<p style="color:var(--muted);">No partners registered yet.</p>';
+        return;
+      }
+      list.innerHTML = partners.map(p => `
+        <div class="admin-row">
+          <div class="info">
+            <h4>${p.company_name} <span class="status-pill ${p.status}">${p.status}</span></h4>
+            <span>${p.contact_person || ''} · ${p.email} · ${p.country || ''}</span>
+          </div>
+          <div class="actions">
+            <button class="btn-go${p.status === 'approved' ? ' is-current' : ''}" onclick="setPartnerStatus('${p.id}', 'approved', '${(p.email || '').replace(/'/g, "\\'")}', '${(p.company_name || '').replace(/'/g, "\\'")}')">Approve</button>
+            <button class="btn-wait${p.status === 'pending' ? ' is-current' : ''}" onclick="setPartnerStatus('${p.id}', 'pending', '${(p.email || '').replace(/'/g, "\\'")}', '${(p.company_name || '').replace(/'/g, "\\'")}')">Pending</button>
+            <button class="btn-stop${p.status === 'rejected' ? ' is-current' : ''}" onclick="setPartnerStatus('${p.id}', 'rejected', '${(p.email || '').replace(/'/g, "\\'")}', '${(p.company_name || '').replace(/'/g, "\\'")}')">Reject</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      list.innerHTML = '<p style="color:#f19a9a;">Could not load partners: ' + err.message + '</p>';
+    }
+  }
+
+  async function setPartnerStatus(id, status, email, companyName) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/partners?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      showPartnerStatus('Partner status updated to "' + status + '".', true);
+
+      if (status === 'approved' || status === 'rejected') {
+        const subject = status === 'approved'
+          ? 'Your Aphelion Expeditions partner account is approved'
+          : 'Update on your Aphelion Expeditions partner application';
+        const html = status === 'approved'
+          ? `<p>Congratulations — <strong>${companyName}</strong> has been approved as an Aphelion Expeditions partner.</p><p>You can now log in to your dashboard and start adding tours.</p>`
+          : `<p>We're sorry, but your partner application for <strong>${companyName}</strong> was not approved at this time.</p><p>Feel free to reach out if you'd like more information.</p>`;
+        sendNotificationEmail(email, subject, html);
+      }
+
+      loadPartners();
+    } catch (err) {
+      showPartnerStatus('Could not update: ' + err.message, false);
+    }
+  }
+
+  function showBookingStatus(msg, ok) {
+    const el = document.getElementById('bookingStatusMsg');
+    el.textContent = msg;
+    el.className = 'status-msg ' + (ok ? 'ok' : 'err');
+    setTimeout(() => { el.className = 'status-msg'; }, 4000);
+  }
+
+  async function loadBookings() {
+    const list = document.getElementById('bookingList');
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/bookings?select=*&order=created_at.desc`, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`
+        }
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      const bookings = await res.json();
+      if (!bookings.length) {
+        list.innerHTML = '<p style="color:var(--muted);">No booking requests yet.</p>';
+        return;
+      }
+      list.innerHTML = bookings.map(b => `
+        <div class="admin-row">
+          <div class="info">
+            <h4>${b.tour_name} <span class="status-pill ${b.status}">${b.status}</span>${b.payment_status === 'paid' ? ' <span class="status-pill paid">paid</span>' : (b.payment_link_url ? ' <span class="status-pill awaiting">awaiting payment</span>' : '')}</h4>
+            <span>${b.company || ''} · ${b.email} · ${b.requested_date || 'no date'} · ${b.travelers || '?'} travelers${b.charge_amount ? ' · ¥' + Number(b.charge_amount).toLocaleString('ja-JP') : ''}</span>
+            ${b.payment_link_url ? `<div style="margin-top:6px;"><a href="${b.payment_link_url}" target="_blank" style="color:var(--gold-soft); font-size:12px;">Payment link ↗</a></div>` : ''}
+          </div>
+          <div class="actions">
+            <button class="btn-go${b.status === 'confirmed' ? ' is-current' : ''}" onclick="setBookingStatus(${b.id}, 'confirmed', '${(b.email || '').replace(/'/g, "\\'")}', '${(b.tour_name || '').replace(/'/g, "\\'")}', ${b.tour_id || 'null'}, ${b.travelers || 1})">Confirm</button>
+            <button class="btn-wait${b.status === 'pending' ? ' is-current' : ''}" onclick="setBookingStatus(${b.id}, 'pending', '${(b.email || '').replace(/'/g, "\\'")}', '${(b.tour_name || '').replace(/'/g, "\\'")}')">Pending</button>
+            <button class="btn-stop${b.status === 'declined' ? ' is-current' : ''}" onclick="setBookingStatus(${b.id}, 'declined', '${(b.email || '').replace(/'/g, "\\'")}', '${(b.tour_name || '').replace(/'/g, "\\'")}')">Decline</button>
+            ${b.payment_status !== 'paid' ? `<button class="btn-paid" onclick="markBookingPaid(${b.id})">Mark Paid</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      list.innerHTML = '<p style="color:#f19a9a;">Could not load bookings: ' + err.message + '</p>';
+    }
+  }
+
+  // COMMISSION_RATE (10%) and publicPrice() come from tours-data.js, so the
+  // amount charged always matches the per-person price shown on the site.
+
+  async function createPaymentLink(amount, description, buyerEmail, referenceId) {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/create-payment-link`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${await getAccessToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ amount, currency: 'JPY', description, buyerEmail, referenceId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ? JSON.stringify(data.error) : 'Payment link request failed');
+    return data; // { url, orderId, id }
+  }
+
+  async function setBookingStatus(id, status, email, tourName, tourId, travelers) {
+    try {
+      let paymentPatch = {};
+      let paymentLinkUrl = null;
+      let chargeTotal = null;
+
+      if (PAYMENTS_ENABLED && status === 'confirmed' && tourId) {
+        try {
+          const tRes = await fetch(`${SUPABASE_URL}/rest/v1/tours?select=price&id=eq.${tourId}`, {
+            headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${await getAccessToken()}` }
+          });
+          const tours = await tRes.json();
+          const basePrice = tours[0]?.price;
+          if (basePrice) {
+            // Prices are in yen, which has no smaller unit, so round to a whole yen.
+            const total = publicPrice(basePrice) * (travelers || 1);
+            const link = await createPaymentLink(total, `Aphelion Expeditions — ${tourName}`, email, 'booking-' + id);
+            paymentLinkUrl = link.url;
+            chargeTotal = total;
+            paymentPatch = {
+              charge_amount: total,
+              payment_link_url: link.url,
+              square_order_id: link.orderId || null,
+              payment_status: 'unpaid'
+            };
+          }
+        } catch (linkErr) {
+          console.error('Could not create payment link:', linkErr);
+          showBookingStatus('Booking confirmed, but payment link failed: ' + linkErr.message, false);
+        }
+      }
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/bookings?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ status, ...paymentPatch })
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      showBookingStatus('Booking status updated to "' + status + '".', true);
+
+      if (status === 'confirmed' || status === 'declined') {
+        const subject = status === 'confirmed'
+          ? `Your booking for "${tourName}" is confirmed`
+          : `Update on your booking for "${tourName}"`;
+        const html = status === 'confirmed'
+          ? `<p>Good news — your booking request for <strong>${tourName}</strong> has been confirmed by Aphelion Expeditions.</p>${paymentLinkUrl ? `<p>Total: <strong>¥${Number(chargeTotal).toLocaleString('ja-JP')}</strong></p><p>Please complete payment to finalize your booking: <a href="${paymentLinkUrl}">${paymentLinkUrl}</a></p><p>Payment is processed securely by Square, our payment provider.</p>` : '<p>Our team will be in touch with further details.</p>'}`
+          : `<p>We're sorry, but your booking request for <strong>${tourName}</strong> could not be confirmed at this time.</p><p>Please contact us if you'd like to discuss alternative dates or tours.</p>`;
+        sendNotificationEmail(email, subject, html);
+      }
+
+      loadBookings();
+    } catch (err) {
+      showBookingStatus('Could not update: ' + err.message, false);
+    }
+  }
+
+  async function markBookingPaid(id) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/bookings?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${await getAccessToken()}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ payment_status: 'paid' })
+      });
+      if (!res.ok) throw new Error('Status ' + res.status);
+      showBookingStatus('Booking marked as paid.', true);
+      loadBookings();
+    } catch (err) {
+      showBookingStatus('Could not update: ' + err.message, false);
+    }
+  }
+</script>
+</body>
+</html>

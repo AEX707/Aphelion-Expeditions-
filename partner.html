@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Become a Partner — Aphelion Expeditions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container topbar-content">
+    <span>For travel partners &amp; tour operators worldwide</span>
+    <span>partners@aphelionexpeditions.com</span>
+  </div>
+</div>
+
+<header>
+  <div class="container navbar">
+    <a href="index.html" class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="logo-full-img"></a>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="tours.html">Tours</a>
+      <a href="index.html#benefits">Why Us</a>
+    </nav>
+    <div class="navbar-right">
+      <button class="menu-toggle" id="menuToggle" aria-label="Menu"><span></span><span></span><span></span></button>
+    <div class="nav-actions">
+      <a href="login.html" class="btn btn-outline">Partner Login</a>
+      <a href="partner.html" class="btn btn-primary">Become a Partner</a>
+    </div>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="container">
+    <div class="eyebrow">Partnership</div>
+    <h1>Become an Aphelion Partner</h1>
+    <p>Join our global network of travel agencies and tour operators, and offer your customers journeys beyond the horizon.</p>
+  </div>
+</section>
+
+<section class="form-page-section">
+  <div class="container form-layout">
+    <div>
+      <div class="eyebrow">Why Partner With Us</div>
+      <h2>Grow your catalogue, effortlessly</h2>
+      <p>Aphelion Expeditions gives travel agencies and tour operators direct access to a curated network of experiences — plus your own dashboard to list and manage the tours you operate.</p>
+      <ul class="check-list">
+        <li>Access to our full tour catalogue</li>
+        <li>Dedicated partner support within 24 hours</li>
+        <li>Partner dashboard to list and manage your own tours</li>
+        <li>Transparent, partner-friendly pricing</li>
+      </ul>
+    </div>
+    <div class="form-card">
+      <h3>Partner Application</h3>
+      <div class="success-message" id="successMessage">Account created! Please check your inbox and click the confirmation link we sent you, then log in with your email and password. Your partnership will show as "pending" until our team reviews it.</div>
+      <div class="error-message" id="errorMessage"></div>
+      <form id="partnerForm">
+        <div class="form-group">
+          <label for="companyName">Company Name</label>
+          <input type="text" id="companyName" name="companyName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="contactPerson">Contact Person</label>
+            <input type="text" id="contactPerson" name="contactPerson" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="country">Country</label>
+          <input type="text" id="country" name="country" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Choose a Password</label>
+          <input type="password" id="password" name="password" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="message">Tell us about your business</label>
+          <textarea id="message" name="message" rows="4" placeholder="What kind of tours do you sell? How many customers do you serve annually?"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%;">Create Partner Account</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="logo"><img src="logo-full-transparent.png" alt="Aphelion Expeditions" class="footer-logo-full-img"></div>
+        <p>Curated journeys for travel partners worldwide — beyond the horizon, beyond the ordinary.</p>
+      </div>
+      <div>
+        <h3>Explore</h3>
+        <a href="tours.html">All Tours</a>
+        <a href="index.html#benefits">Why Us</a>
+      </div>
+      <div>
+        <h3>Partners</h3>
+        <a href="partner.html">Become a Partner</a>
+        <a href="login.html">Partner Login</a>
+      </div>
+      <div>
+        <h3>Contact</h3>
+        <a href="mailto:partners@aphelionexpeditions.com">partners@aphelionexpeditions.com</a>
+        <a href="mailto:info@aphelionexpeditions.com">info@aphelionexpeditions.com</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="copyright">© 2026 Aphelion Expeditions. All rights reserved.</div>
+      <a href="admin.html" class="footer-admin-link" rel="nofollow">Admin</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script>
+  const form = document.getElementById('partnerForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const successMessage = document.getElementById('successMessage');
+  const errorMessage = document.getElementById('errorMessage');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMessage.style.display = 'none';
+    successMessage.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating account...';
+
+    const companyName = document.getElementById('companyName').value;
+    const contactPerson = document.getElementById('contactPerson').value;
+    const email = document.getElementById('email').value;
+    const country = document.getElementById('country').value;
+    const password = document.getElementById('password').value;
+    const message = document.getElementById('message').value;
+
+    try {
+      // Create the login account. The partner profile (company, contact, etc.)
+      // is passed along and created automatically by the database as soon as
+      // the account exists — this works even before the partner has clicked
+      // the email confirmation link.
+      const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            company_name: companyName,
+            contact_person: contactPerson,
+            country: country,
+            message: message
+          }
+        }
+      });
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Account created, but no user returned.');
+
+      successMessage.style.display = 'block';
+      form.reset();
+    } catch (err) {
+      errorMessage.textContent = 'Could not create your account: ' + err.message;
+      errorMessage.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create Partner Account';
+    }
+  });
+</script>
+<script src="mobile-nav.js"></script>
+<script src="i18n.js"></script>
+</body>
+</html>
